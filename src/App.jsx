@@ -25,7 +25,7 @@ const App = () => {
     )
     
     const baseOffset = Math.floor(repeated.length / 2)
-    
+
     // useEffect(() => {
     //     // debug values
     //     const initialY = -baseOffset * itemHeigh;
@@ -38,11 +38,31 @@ const App = () => {
     //         }
     //     });
     //     }, [baseOffset, itemHeigh]);
+    const getRandomHighChance=(highChanceId)=>{
+        const weightPool=[]
+        slot.forEach((item)=>{
+            if(item.id=== 9){
+                weightPool.push(...Array(10).fill(item))
+            }else if(item.id === highChanceId){
+                weightPool.push(...Array(60).fill(item))
+            }else{
+                weightPool.push(...Array(30).fill(item));
+            }
+        })
+        return weightPool[Math.floor(Math.random() * weightPool.length)];
+    }
 
     const spinFunc= ()=>{
         if(spinning) return;
         setSpinning(true);
         let finishedCount = 0;
+
+        const nonJackpotSymbols = slot.filter(s => s.id !== 9);
+        const highChanceId = nonJackpotSymbols[
+        Math.floor(Math.random() * nonJackpotSymbols.length)
+        ].id;
+        
+
         for(let i = 0;i<reels.length;i++){
             const element = stripRefs.current[i];
 
@@ -50,12 +70,15 @@ const App = () => {
                 finishedCount++;
                 continue    
             }
+            const symbol = getRandomHighChance(highChanceId);
+            console.log(symbol)
+            const randomIndex = slot.findIndex(s => s.id === symbol.id);
 
-            const randomIndex = Math.floor(Math.random() * slot.length);
             const loop = 3 + Math.floor(Math.random() * 4); // 3..6 loops
             const finalIndex = baseOffset + loop * slot.length + randomIndex;
             const finalY = -finalIndex * itemHeigh;
             const duration = 0.9 + Math.random() * 1.0 + i * 0.25;
+
             console.log('loop', loop, 'finalIndex', finalIndex, 'finalY', finalY, 'duration', duration);
             gsap.to(element,{
                 y:finalY,

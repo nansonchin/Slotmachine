@@ -14,7 +14,7 @@ const App = () => {
         { id: 9, value: '7️⃣',rewards:1000 },
     ]
     const [statusText,setStatusText] = useState('Welcome')
-    const [tokens, setTokens] = useState(10);
+    const [tokens, setTokens] = useState(0);
     const [spinning, setSpinning] = useState(false);
     const [reels, setReels] = useState([[], [], []]);
     const stripRefs = useRef([]);
@@ -39,6 +39,17 @@ const App = () => {
     //         }
     //     });
     //     }, [baseOffset, itemHeigh]);
+    useEffect(()=>{
+        const handleKey=(event=>{
+            if(event.key.toLowerCase() === 'r'){
+                setTokens(prev=>prev+10)
+            }
+        })
+        window.addEventListener('keydown',handleKey)
+        return()=>{
+            window.removeEventListener('keydown',handleKey)
+        }
+    },[])
     const getRandomHighChance=(highChanceId)=>{
         const weightPool=[]
         slot.forEach((item)=>{
@@ -55,7 +66,7 @@ const App = () => {
 
     const spinFunc= ()=>{
         setStatusText('Welcome')
-        setTokens(prev=>(prev-2))
+        setTokens(prev=>(prev-50))
         if(spinning) return;
         setSpinning(true);
 
@@ -111,7 +122,7 @@ const App = () => {
                             const rewards=matched.rewards
 
                             console.log('REWARDS'+ rewards)
-                            
+
                             setTokens(prev=>prev+rewards)
                             if(matched.id !== 9){
                                 setStatusText(`Congratulation, You Win ${rewards} tokens`)
@@ -160,12 +171,14 @@ const App = () => {
         <div className='button-container'>
                <button 
                className='spin-button'
-               disabled={spinning}
+               disabled={spinning || tokens===0}
                style={{
                 cursor: spinning ? "not-allowed" : "pointer",
-                background: spinning ? "#9ca3af" : "#10b981",}}
-               onClick={spinFunc}>
-                    {spinning ? 'Spinning...':'Spin'}
+                background: tokens ===0? '': spinning ? "#9ca3af" : "#10b981",}}
+                onClick={spinFunc}>
+                    {tokens ===0 ? ("Press 'R' to reload Token") :
+                        spinning ? 'Spinning...':'Spin'
+                    }
                </button>
         </div>
     </section>

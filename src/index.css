@@ -1,0 +1,34 @@
+@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gray-100 text-gray-900;
+  }
+}
+
+@layer components {
+  .slot-item {
+    @apply w-[240px] border-2
+  }
+  .slot-item {
+    @apply text-[6rem] text-center flex items-center justify-center
+  }
+  .slot-container{
+    @apply flex justify-center items-center h-fit gap-[2rem] border-2  relative overflow-hidden
+  }
+  .button-container{
+    @apply flex justify-center items-center gap-[2rem] mt-[2rem]
+  }
+  .spin-button{
+    @apply cursor-pointer bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors;
+  }
+  .slot-token{
+    @apply flex justify-end items-center;
+  }
+  .token{
+    @apply border-2 p-4 rounded mb-4 flex justify-center items-center w-fit;
+  }
+}

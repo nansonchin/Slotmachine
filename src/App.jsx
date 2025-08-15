@@ -3,16 +3,17 @@ import { gsap } from "gsap";
 
 const App = () => {
     const slot = [
-        { id: 1, value: '🍎' },
-        { id: 2, value: '🍌' },
-        { id: 3, value: '🍒' },
-        { id: 4, value: '🍇' },
-        { id: 5, value: '🍉' },
-        { id: 6, value: '🍊' },
-        { id: 7, value: '🍋' },
-        { id: 8, value: '🍍' },
-        { id: 9, value: '7️⃣' },
+        { id: 1, value: '🍎',rewards:10 },
+        { id: 2, value: '🍌',rewards:20  },
+        { id: 3, value: '🍒',rewards:30  },
+        { id: 4, value: '🍇',rewards:40  },
+        { id: 5, value: '🍉',rewards:50  },
+        { id: 6, value: '🍊',rewards:60  },
+        { id: 7, value: '🍋',rewards:70  },
+        { id: 8, value: '🍍',rewards:80  },
+        { id: 9, value: '7️⃣',rewards:1000 },
     ]
+    const [statusText,setStatusText] = useState('Welcome')
     const [tokens, setTokens] = useState(10);
     const [spinning, setSpinning] = useState(false);
     const [reels, setReels] = useState([[], [], []]);
@@ -53,15 +54,22 @@ const App = () => {
     }
 
     const spinFunc= ()=>{
+        setStatusText('Welcome')
+        setTokens(prev=>(prev-2))
         if(spinning) return;
         setSpinning(true);
+
         let finishedCount = 0;
 
+        const spinResults = [];
         const nonJackpotSymbols = slot.filter(s => s.id !== 9);
         const highChanceId = nonJackpotSymbols[
         Math.floor(Math.random() * nonJackpotSymbols.length)
         ].id;
-        
+
+        const forceWin =Math.random()<0.4
+        let winningSymbol=null
+
 
         for(let i = 0;i<reels.length;i++){
             const element = stripRefs.current[i];
@@ -70,7 +78,17 @@ const App = () => {
                 finishedCount++;
                 continue    
             }
-            const symbol = getRandomHighChance(highChanceId);
+            let symbol;
+            if(i===0){
+                symbol = getRandomHighChance(highChanceId)
+                winningSymbol= symbol
+            }else{
+                if(forceWin && winningSymbol.id !==9){
+                    symbol = winningSymbol
+                }else{
+                    symbol = getRandomHighChance(highChanceId)
+                }
+            }
             console.log(symbol)
             const randomIndex = slot.findIndex(s => s.id === symbol.id);
 
@@ -79,6 +97,7 @@ const App = () => {
             const finalY = -finalIndex * itemHeigh;
             const duration = 0.9 + Math.random() * 1.0 + i * 0.25;
 
+            spinResults[i]=symbol
             console.log('loop', loop, 'finalIndex', finalIndex, 'finalY', finalY, 'duration', duration);
             gsap.to(element,{
                 y:finalY,
@@ -87,6 +106,19 @@ const App = () => {
                 onComplete : () => {
                     finishedCount++;
                     if(finishedCount === reels.length){
+                        if(spinResults[0].id === spinResults[1].id &&  spinResults[1].id === spinResults[2].id){
+                            const matched= slot.find(s=>s.id ===spinResults[0].id)
+                            const rewards=matched.rewards
+
+                            console.log('REWARDS'+ rewards)
+                            
+                            setTokens(prev=>prev+rewards)
+                            if(matched.id !== 9){
+                                setStatusText(`Congratulation, You Win ${rewards} tokens`)
+                            }else{
+                                setStatusText(`WE GOT A 777 BONUES WINNER : ${rewards}`)
+                            }
+                        }
                         setSpinning(false);
                     }
                 }
@@ -100,6 +132,9 @@ const App = () => {
     <section className='SlotMachine'>
         <div className='slot-token'>
             <span className='token'>Tokens: {tokens}</span>
+        </div>
+        <div className='text-center text-xl py-6'>
+            {statusText}
         </div>
         <div className='slot-container' >
             {reels.map((reel, index) => (

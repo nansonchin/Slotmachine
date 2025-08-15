@@ -39,6 +39,7 @@ const App = () => {
     //         }
     //     });
     //     }, [baseOffset, itemHeigh]);
+
     useEffect(()=>{
         const handleKey=(event=>{
             if(event.key.toLowerCase() === 'r'){
@@ -171,12 +172,12 @@ const App = () => {
         <div className='button-container'>
                <button 
                className='spin-button'
-               disabled={spinning || tokens===0}
+               disabled={spinning || tokens<50}
                style={{
                 cursor: spinning ? "not-allowed" : "pointer",
-                background: tokens ===0? '': spinning ? "#9ca3af" : "#10b981",}}
+                background: tokens <50? '': spinning ? "#9ca3af" : "#10b981",}}
                 onClick={spinFunc}>
-                    {tokens ===0 ? ("Press 'R' to reload Token") :
+                    {tokens <50 ? ("Press 'R' to reload Token") :
                         spinning ? 'Spinning...':'Spin'
                     }
                </button>

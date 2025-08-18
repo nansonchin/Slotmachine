@@ -2,6 +2,7 @@ import React,{useState,useRef,useEffect} from 'react'
 import { gsap } from "gsap";
 
 const SlotMachine = () => {
+    const audioRef = useRef(null);
     const slot = [
         { id: 1, value: '🍎',rewards:10 },
         { id: 2, value: '🍌',rewards:20  },
@@ -39,6 +40,7 @@ const SlotMachine = () => {
     //         }
     //     });
     //     }, [baseOffset, itemHeigh]);
+
 
     useEffect(()=>{
         const handleKey=(event=>{
@@ -142,9 +144,17 @@ const SlotMachine = () => {
 
   return (
     <section className='SlotMachine relative'>
-        <div></div>
+             <video
+                className="absolute top-0 left-0 w-full min-h-screen object-cover"
+                src="src/assets/video/pixel.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+            />
         <div className='min-h-screen min-w-screen bg-[url(src/assets/images/background.png)] bg-cover bg-center overflow-hidden absolute top-0'></div>
-        <div>
+        
+        <div className='relative z-20'>
             <div className="slot-token ">
                 <span className='token'>Tokens: {tokens}</span>
             </div>

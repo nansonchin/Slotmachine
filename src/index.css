@@ -68,3 +68,44 @@
     shadow-[inset_0_0_20px_#fff,inset_10px_0_46px_#eaf5fc,inset_88px_0px_60px_#c2d8fe,inset_-20px_-60px_100px_#fde9ea,inset_0_50px_140px_#fde9ea,0_0_90px_#fff]
   }
 }
+
+@layer utilities{
+  @keyframes rotate-border {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  .animated-border::before {
+    content: "";
+    position: absolute;
+    inset: -2px; /* expands border outside */
+    padding: 2px; /* border thickness */
+    background: conic-gradient(
+      red,
+      orange,
+      yellow,
+      lime,
+      cyan,
+      blue,
+      violet,
+      red
+    );
+    border-radius: inherit;
+    animation: rotate-border 3s linear infinite;
+    z-index: 0;
+    -webkit-mask: 
+      linear-gradient(#fff 0 0) content-box, 
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+  }
+
+  .animated-border > * {
+    position: relative;
+    z-index: 1; /* keep text above */
+  }
+}

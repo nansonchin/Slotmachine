@@ -8,9 +8,9 @@ const App = () => {
       useEffect(() => {
             if(!isLoading && isClicked){  
                 const audio= document.getElementById('bg-audio')
-                if(audio){
-                    audio.play().catch(err=>console.log("Autoplay Blocked: ",err))
-                }
+                // if(audio){
+                //     audio.play().catch(err=>console.log("Autoplay Blocked: ",err))
+                // }
                
             }
             

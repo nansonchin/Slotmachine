@@ -3,6 +3,25 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+    font-family: "NCLMonster";
+    src: url("./assets/fonts/NCLMonsterBeast-Demo.otf") format("opentype");
+    font-display: swap;
+}
+@font-face {
+    font-family: "NCLArse";
+    src: url("./assets/fonts/NCLArsegzone-Demo.otf") format("opentype");
+    font-display: swap;
+}
+
+.font-mons {
+  font-family: "NCLMonster", system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+}
+
+.font-arse {
+  font-family: "NCLArse", system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+}
+
 @layer base {
   body {
     @apply bg-gray-100 text-gray-900;
@@ -10,14 +29,17 @@
 }
 
 @layer components {
+  .center-box{
+    @apply absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
+  }
   .slot-item {
-    @apply w-[240px] border-2
+    @apply w-[240px] 
   }
   .slot-item {
     @apply text-[6rem] text-center flex items-center justify-center
   }
   .slot-container{
-    @apply flex justify-center items-center h-fit gap-[2rem] border-2  relative overflow-hidden
+    @apply flex justify-center items-center h-fit gap-[2rem]  relative overflow-hidden
   }
   .button-container{
     @apply flex justify-center items-center gap-[2rem] mt-[2rem]
@@ -26,9 +48,12 @@
     @apply cursor-pointer bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors;
   }
   .slot-token{
-    @apply flex justify-end items-center;
+    @apply flex justify-end items-center min-h-full h-full overflow-hidden ;
   }
   .token{
     @apply border-2 p-4 rounded mb-4 flex justify-center items-center w-fit;
+  }
+  .loading-background{
+    @apply  min-h-screen min-w-screen relative
   }
 }

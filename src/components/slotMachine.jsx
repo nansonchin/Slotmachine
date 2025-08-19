@@ -5,10 +5,12 @@ const SlotMachine = () => {
     const audioRef = useRef(null);
     const bgFrame = useRef(null)
     const [history,setHistory] = useState([])
-    const [bonusStage,setBonusStage] = useState(false)
-    const [bonusCount,setBonusCount] = useState(9)
-    const [bonusTotal,setTotalBonus] = useState(5)
-    const [isInfinite, setIsInfinite] = useState(false);
+    // const [bonusStage,setBonusStage] = useState(false)
+    // const [bonusCount,setBonusCount] = useState(9)
+    // const [bonusTotal,setTotalBonus] = useState(5)
+    // const [isInfinite, setIsInfinite] = useState(false);
+    const [bonusProgress,setBonusProgress] =useState(0)
+    const [freeSpinsRemaining,setFreeSpinsRemaining] =useState(0)
     const slot = [
         { id: 1, value: '🍎',rewards:10,name:'Apple X3 (Tokens : 10)' },
         { id: 2, value: '🍌',rewards:20,name:'Banana X3 (Tokens : 20)'  },
@@ -49,7 +51,7 @@ const SlotMachine = () => {
     //     });
     //     }, [baseOffset, itemHeigh]);
     const handleMouseLeave=()=>{
-        const element = frameRef.current
+        const element = bgFrame.current
         gsap.to(element,{
             duration:0.3,
             rotateX:0,
@@ -84,13 +86,13 @@ const SlotMachine = () => {
             ease: "power1.inOut",
         });
     };
-    useEffect(() => {
-        if (bonusCount === 10) {
-            setIsInfinite(true);   // immediately change tokens to infinity symbol
-        }else{
-            setIsInfinite(false)
-        }
-    }, [bonusCount]);
+    // useEffect(() => {
+    //     if (bonusCount === 10) {
+    //         setIsInfinite(true);   // immediately change tokens to infinity symbol
+    //     }else{
+    //         setIsInfinite(false)
+    //     }
+    // }, [bonusCount]);
 
     useEffect(()=>{
         const handleKey=(event=>{
@@ -141,28 +143,16 @@ const SlotMachine = () => {
         }
     },[history])
     const spinFunc= ()=>{
-       if(spinning)return;
-        if(!bonusStage && tokens <50) return
-
+        if(spinning)return;
+        
+        if(freeSpinsRemaining === 0 && tokens <50) return;
         setSpinning(true)
         setStatusText('Welcome')
-
-        if(!isInfinite){
-            setTokens((prev)=>prev-50)
+        
+        if(freeSpinsRemaining ===0){
+            setTokens((prev)=> prev-50)
         }
 
-        if(bonusStage || isInfinite){
-            setTotalBonus(prev =>{
-                const remaining = prev-1
-                if(remaining <=0){
-                    setBonusStage(false)
-                    setBonusCount(0)
-                    setTotalBonus(5)
-                    setIsInfinite(false)
-                }
-                return remaining
-            })
-        }
         let finishedCount = 0;
 
         const spinResults = [];
@@ -228,33 +218,55 @@ const SlotMachine = () => {
                                 return updated.length > 6? updated.slice(updated.length-6):updated
                             })
 
-                            if(bonusCount !==10 && !isInfinite){
-                                setBonusCount((prev)=>prev+=1)
-                            }else if(bonusCount===10){
-                                setBonusStage(true)
-                                setBonusCount(0)
-                                setIsInfinite(true)
+                            if(freeSpinsRemaining ===0){
+                                setBonusProgress((prev)=>{
+                                    const next = prev+1
+                                    if(next >=10){
+                                        setBonusProgress(0)
+                                        setFreeSpinsRemaining(5)
+                                        setStatusText("Bonus")
+                                    }
+                                    return next>=10? 0:next
+                                })
                             }
+                            setFreeSpinsRemaining((prev)=>{
+                                if(prev>0){
+                                    const next= prev-1;
+                                    if(next<=0){
+                                        setStatusText('Free Spins Finished')
+                                    }else{
+                                        setStatusText(`Free Spins left :${next}`)
+                                    }
+                                    return Math.max(0,next)
+                                }
+                                return prev
+                                
+                            })
                         }
                         setSpinning(false);
                     }
                 }
             })
-            
         }
     }
    
-
+    const inFreeSpinMode = freeSpinsRemaining > 0;
   return (
     <section className='SlotMachine relative min-h-screen border-2'>
-            {/* <video
+        <div className='center-box border-2 w-[20%] h-[40%] bg-black
+        [clip-path:polygon(50%_0%,_90%_20%,_100%_60%,_75%_100%,_25%_100%,_0%_60%,_10%_20%)]
+        z-999
+        '>
+            <img src='src/assets/images/warning.gif' className='object-cover'/>
+        </div>
+            <video
                 className="absolute top-0 left-0 w-full min-h-screen object-cover z-1"
                 src="src/assets/video/pixel.mp4"
                 autoPlay
                 loop
                 muted
                 playsInline
-            /> */}
+            />
             <div className=" bg-black opacity-30 z-1 absolute min-h-screen min-w-screen"></div>
         <div ref={bgFrame} 
         onMouseMove={handleMouseMove}
@@ -339,9 +351,9 @@ const SlotMachine = () => {
                         <span className='font-mons text-[0.7rem]'>Tokens:</span> 
                         <span className='!text-[1rem]'>{tokens}</span>
                 </div>
-                <div className={`${bonusCount<10? 'bg-[#D97F9C]':'bg-white'} p-[2.125rem]  border-black opacity-75
+                <div className={`${!inFreeSpinMode? 'bg-[#D97F9C]':'bg-white'} p-[2.125rem]  border-black opacity-75
                     [transform-style:preserve-3d] [transform:rotateX(-5deg)_rotateY(-10deg)] mix-blend-difference flex items-center gap-[0.6rem] rotate-5 !clip-path-[polygon(0_12%,100%_0%,100%_100%,0_83%)]
-                     ${isInfinite ? "animated-border" : ""}
+                     ${inFreeSpinMode ? "animated-border" : ""}
                     `} 
                     onMouseMove={handleMouseMove}
                     onMouseLeave={handleMouseLeave}
@@ -349,11 +361,11 @@ const SlotMachine = () => {
                     onMouseEnter={handleMouseLeave}
                 > 
                         <span className='font-mons text-[0.7rem]'>Bonus Stage:</span> 
-                        <span className='!text-[1rem]'>{bonusCount} / 10</span>
+                        <span className='!text-[1rem]'>{bonusProgress} / 10</span>
                 </div>
-                <div className={`${bonusCount<10? 'bg-[#D97F9C]':'bg-white'} p-[2.125rem]  border-black opacity-75
+                <div className={`${!inFreeSpinMode? 'bg-[#D97F9C]':'bg-white'} p-[2.125rem]  border-black opacity-75
                     [transform-style:preserve-3d] [transform:rotateX(-5deg)_rotateY(-10deg)] mix-blend-difference flex items-center gap-[0.6rem] rotate-5 !clip-path-[polygon(0_12%,100%_0%,100%_100%,0_83%)]
-                     ${isInfinite? "animated-border" : ""}
+                     ${inFreeSpinMode? "animated-border" : ""}
                     `} 
                     onMouseMove={handleMouseMove}
                     onMouseLeave={handleMouseLeave}
@@ -361,7 +373,7 @@ const SlotMachine = () => {
                     onMouseEnter={handleMouseLeave}
                 > 
                         <span className='font-mons text-[0.7rem]'>Bonus Left:</span> 
-                        <span className='!text-[1rem]'>{bonusTotal}</span>
+                        <span className='!text-[1rem]'>{freeSpinsRemaining}</span>
                 </div>
             </div>
        </div>

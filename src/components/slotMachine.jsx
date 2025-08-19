@@ -5,11 +5,9 @@ const SlotMachine = () => {
     const audioRef = useRef(null);
     const bgFrame = useRef(null)
     const [history,setHistory] = useState([])
-    // const [bonusStage,setBonusStage] = useState(false)
-    // const [bonusCount,setBonusCount] = useState(9)
-    // const [bonusTotal,setTotalBonus] = useState(5)
-    // const [isInfinite, setIsInfinite] = useState(false);
-    const [bonusProgress,setBonusProgress] =useState(0)
+    const bonusTitleRef = useRef()
+    const bonusStageRef = useRef()
+    const [bonusProgress,setBonusProgress] =useState(9)
     const [freeSpinsRemaining,setFreeSpinsRemaining] =useState(0)
     const slot = [
         { id: 1, value: '🍎',rewards:10,name:'Apple X3 (Tokens : 10)' },
@@ -35,21 +33,10 @@ const SlotMachine = () => {
         { length: slot.length * repeat },
         (_, i) => slot[i % slot.length]
     )
-    
+    const [isAnimatingBonus,setIsAnimatingBonus]= useState(false)
     const baseOffset = Math.floor(repeated.length / 2)
 
-    // useEffect(() => {
-    //     // debug values
-    //     const initialY = -baseOffset * itemHeigh;
-    //     // optional debug
-    //     console.log('baseOffset', baseOffset, 'itemHeigh', itemHeigh, 'initialY', initialY);
 
-    //     stripRefs.current.forEach((el) => {
-    //         if (el) {
-    //         gsap.set(el, { y: initialY });
-    //         }
-    //     });
-    //     }, [baseOffset, itemHeigh]);
     const handleMouseLeave=()=>{
         const element = bgFrame.current
         gsap.to(element,{
@@ -95,6 +82,7 @@ const SlotMachine = () => {
     // }, [bonusCount]);
 
     useEffect(()=>{
+        if(isAnimatingBonus) return;
         const handleKey=(event=>{
             if(event.key.toLowerCase() === 'r'){
                 setTokens(prev=>prev+10)
@@ -104,7 +92,7 @@ const SlotMachine = () => {
         return()=>{
             window.removeEventListener('keydown',handleKey)
         }
-    },[])
+    },[isAnimatingBonus])
 
     const getRandomHighChance=(highChanceId)=>{
         const weightPool=[]
@@ -142,8 +130,10 @@ const SlotMachine = () => {
             }
         }
     },[history])
+
     const spinFunc= ()=>{
-        if(spinning)return;
+
+        if(spinning || isAnimatingBonus)return;
         
         if(freeSpinsRemaining === 0 && tokens <50) return;
         setSpinning(true)
@@ -249,16 +239,92 @@ const SlotMachine = () => {
             })
         }
     }
+
+    const prevFreeSpinsRef = useRef(freeSpinsRemaining)
+
+    useEffect(()=>{
+        if(freeSpinsRemaining > 0 && prevFreeSpinsRef.current === 0){
+            runBonusAnimation()
+        }
+        prevFreeSpinsRef.current = freeSpinsRemaining
+    },[freeSpinsRemaining])
+
+    const runBonusAnimation =()=>{
+            // 1) show overlay (mounts bonusStageRef into DOM)
+        setIsAnimatingBonus(true);
+
+        // 2) wait a tick so the img element actually mounts and the ref is set
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+            // now refs should be available
+            if (!bonusTitleRef.current || !bonusStageRef.current) {
+                console.warn("bonus refs not ready");
+                return;
+            }
+
+            setIsAnimatingBonus(true); // already set but safe to call
+
+            gsap.set(bonusTitleRef.current, { opacity: 0, display: "block", y: -20 });
+            gsap.set(bonusStageRef.current, { opacity: 0, display: "none" });
+
+            const tl = gsap.timeline({
+                onComplete: () => {
+                gsap.set(bonusTitleRef.current, { display: "none", opacity: 0 });
+                gsap.set(bonusStageRef.current, { display: "none", opacity: 0 });
+                setIsAnimatingBonus(false);
+                },
+            });
+
+            tl.to(bonusTitleRef.current, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" });
+            tl.to(bonusTitleRef.current, { opacity: 0, duration: 0.6, delay: 0.6 });
+
+            tl.set(bonusStageRef.current, { display: "block", opacity: 0 });
+
+            const blinkTl = gsap.timeline({ repeat: 2 });
+            blinkTl
+                .to(bonusStageRef.current, { opacity: 1, duration: 0.12 })
+                .to(bonusStageRef.current, { opacity: 0, duration: 0.12, delay: 0.08 });
+            tl.add(blinkTl);
+
+            tl.to(bonusStageRef.current, { opacity: 0, duration: 0.2, delay: 0.1 });
+
+            // store timeline so you can kill it on unmount if needed
+            bonusStageRef.current._tl = tl;
+            });
+        });
+    }
+
+    useEffect(()=>{
+        return()=>{
+            try{
+                if(bonusStageRef.current && bonusStageRef.current._tl){
+                    bonusStageRef.current._tl.kill()
+                }
+            }catch(e){}
+        }
+    },[])
    
     const inFreeSpinMode = freeSpinsRemaining > 0;
   return (
-    <section className='SlotMachine relative min-h-screen border-2'>
-        <div className='center-box border-2 w-[20%] h-[40%] bg-black
-        [clip-path:polygon(50%_0%,_90%_20%,_100%_60%,_75%_100%,_25%_100%,_0%_60%,_10%_20%)]
-        z-999
-        '>
-            <img src='src/assets/images/warning.gif' className='object-cover'/>
+    <section className='SlotMachine relative min-h-screen'>
+        <div ref={bonusTitleRef} className='w-[50%] h-[8rem] center-box items-center flex justify-center text-[3rem] bg-[#FFFF3C] z-99 font-mons'
+        style={{ display: "none", opacity: 0 }}>
+            Bonus
         </div>
+        {
+            isAnimatingBonus && (
+                <div className='absolute inset-0 z-[9999] pointer-events-auto flex items-center justify-center'>
+                    <div className='absolute inset-0 bg-black/40'>
+                        <img ref={bonusStageRef} src="src/assets/images/BONUSSTAGE.png" className='relative w-full h-full object-cover z-[10000] pointer-events-none' 
+                        style={{display:'none',opacity:'0'}}/>
+                    </div>
+                </div>
+            )
+        }
+        {/* <div className='m-auto w-full -'>
+            <img className="py-5" src='src/assets/images/BONUSSTAGE.png'/>
+        </div> */}
+        {/*       
             <video
                 className="absolute top-0 left-0 w-full min-h-screen object-cover z-1"
                 src="src/assets/video/pixel.mp4"
@@ -266,20 +332,27 @@ const SlotMachine = () => {
                 loop
                 muted
                 playsInline
-            />
-            <div className=" bg-black opacity-30 z-1 absolute min-h-screen min-w-screen"></div>
+            /> */}
+            {/* <div className=" bg-black opacity-30 z-1 absolute min-h-screen min-w-screen"></div> */}
         <div ref={bgFrame} 
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
         className='min-h-screen min-w-screen bg-[url(src/assets/images/background.png)] bg-cover bg-center overflow-hidden absolute top-0 z-20'></div>
         
-        <div className='relative z-20'>
-            <div className='bg-white opacity-35 min-w-screen min-h-[60vh] absolute border
+        <div className='relative z-0'>
+            <div className='bg-black opacity-100 min-w-screen min-h-[60vh] absolute border
            [transform-style:preserve-3d] [transform:rotateX(-8deg)_rotateY(0deg)] mix-blend-difference
             [mask-image:radial-gradient(60%_180px_at_bottom,#0000_98%,#000)] 
             [clip-path:ellipse(98%_95%_at_bottom)]
             '>
-
+                <video
+                className="absolute top-0 left-0 w-full min-h-screen object-center z-1"
+                src="src/assets/video/pixel.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+            />
             </div>
             <div className="slot-token ">
                 {/* <span className='token'>Tokens: {tokens}</span> */}
@@ -324,7 +397,7 @@ const SlotMachine = () => {
             </div>
         </div>
         
-       <div class="relative w-[100%] [perspective:100px] mt-[10rem] z-50 flex" >
+       <div className="relative w-[100%] [perspective:100px] mt-[10rem] z-50 flex" >
             <div className=' w-[20%]'>
                 {
                     history.length >0 &&(

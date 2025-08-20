@@ -20,12 +20,14 @@ const App = () => {
             <audio id="bg-audio" loop>
                 <source src="src/assets/sound/sound.mp3" type="audio/mpeg" />
             </audio>
-            {isLoading && !isClicked?(
+            {/* {isLoading && !isClicked?(
                  <Loading onComplete={()=>setIsLoading(false)} isClicked={()=>setIsClicked(true)}/> 
             ):(
                 <SlotMachine/>
             )
-            }
+            } */}
+                <SlotMachine/>
+
         </div>
     )
 }

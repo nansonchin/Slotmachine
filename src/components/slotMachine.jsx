@@ -35,8 +35,11 @@ const SlotMachine = () => {
     )
     const [isAnimatingBonus,setIsAnimatingBonus]= useState(false)
     const baseOffset = Math.floor(repeated.length / 2)
-
-
+    const splitBox = useRef()
+    const splitLeftRef = useRef()
+    const splitRightRef = useRef()
+    const glitchRef = useRef()
+    const isAnimatingBonusRef = useRef(false);
     const handleMouseLeave=()=>{
         const element = bgFrame.current
         gsap.to(element,{
@@ -250,45 +253,33 @@ const SlotMachine = () => {
     },[freeSpinsRemaining])
 
     const runBonusAnimation =()=>{
-            // 1) show overlay (mounts bonusStageRef into DOM)
-        setIsAnimatingBonus(true);
+        if (isAnimatingBonusRef.current) return;
 
-        // 2) wait a tick so the img element actually mounts and the ref is set
+        setIsAnimatingBonus(true);
+        isAnimatingBonusRef.current = true;
+
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-            // now refs should be available
-            if (!bonusTitleRef.current || !bonusStageRef.current) {
+            if (!glitchRef.current || !bonusStageRef.current || !splitBox.current || !splitLeftRef.current || !splitRightRef.current) {
                 console.warn("bonus refs not ready");
                 return;
             }
 
             setIsAnimatingBonus(true); // already set but safe to call
 
-            gsap.set(bonusTitleRef.current, { opacity: 0, display: "block", y: -20 });
             gsap.set(bonusStageRef.current, { opacity: 0, display: "none" });
-
+            gsap.set(splitBox.current, { opacity: 0, });
             const tl = gsap.timeline({
                 onComplete: () => {
-                gsap.set(bonusTitleRef.current, { display: "none", opacity: 0 });
+                gsap.set(splitBox.current, { display: "none", opacity: 0 });
                 gsap.set(bonusStageRef.current, { display: "none", opacity: 0 });
                 setIsAnimatingBonus(false);
                 },
             });
+            tl.to(splitBox.current,{display:'block',opacity:1,duration:0.65,ease:'power3.out'})
+            tl.to(splitLeftRef.current, { yPercent: -100, duration: 0.65, ease: "power3.out" }, 0);
+            tl.to(splitRightRef.current, { yPercent:100, duration: 0.65, ease: "power3.out" }, 0);
 
-            tl.to(bonusTitleRef.current, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" });
-            tl.to(bonusTitleRef.current, { opacity: 0, duration: 0.6, delay: 0.6 });
-
-            tl.set(bonusStageRef.current, { display: "block", opacity: 0 });
-
-            const blinkTl = gsap.timeline({ repeat: 2 });
-            blinkTl
-                .to(bonusStageRef.current, { opacity: 1, duration: 0.12 })
-                .to(bonusStageRef.current, { opacity: 0, duration: 0.12, delay: 0.08 });
-            tl.add(blinkTl);
-
-            tl.to(bonusStageRef.current, { opacity: 0, duration: 0.2, delay: 0.1 });
-
-            // store timeline so you can kill it on unmount if needed
             bonusStageRef.current._tl = tl;
             });
         });
@@ -297,6 +288,9 @@ const SlotMachine = () => {
     useEffect(()=>{
         return()=>{
             try{
+                if(splitBox.current && splitBox.current._tl){
+                  splitBox.current._tl.kill()
+                }
                 if(bonusStageRef.current && bonusStageRef.current._tl){
                     bonusStageRef.current._tl.kill()
                 }
@@ -307,23 +301,48 @@ const SlotMachine = () => {
     const inFreeSpinMode = freeSpinsRemaining > 0;
   return (
     <section className='SlotMachine relative min-h-screen'>
-        <div ref={bonusTitleRef} className='w-[50%] h-[8rem] center-box items-center flex justify-center text-[3rem] bg-[#FFFF3C] z-99 font-mons'
-        style={{ display: "none", opacity: 0 }}>
-            Bonus
+         <div ref={splitBox} className='center-box w-[50%] h-[8rem] overflow-hidden items-center justify-center bg-[#FFFF3C]' 
+          style={{display: "none", zIndex:999}}
+          >
+              <div className=' center-box text-[3rem] font-mons'
+                style={{zIndex:999}}
+              >
+                    Bonus
+                </div>
+            <div className='relative w-full h-full flex flex-col overflow-hidden'>
+                <div ref={splitLeftRef} className='w-full h-full overflow-hidden flex items-center bg-[#ffff] justify-center ' style={{zIndex:9999}}>
+                    <div className='transform translate-x-0'>
+                    </div>
+                </div>
+  
+                <div ref={splitRightRef} className='w-full h-full overflow-hidden flex items-center bg-[#ffff] justify-center ' style={{zIndex:9999}}>
+                    <div className='transform translate-x-0'>
+                    </div>
+                </div>
+            </div>
         </div>
+    
         {
             isAnimatingBonus && (
                 <div className='absolute inset-0 z-[9999] pointer-events-auto flex items-center justify-center'>
-                    <div className='absolute inset-0 bg-black/40'>
+                    <div className='absolute inset-0'>
                         <img ref={bonusStageRef} src="src/assets/images/BONUSSTAGE.png" className='relative w-full h-full object-cover z-[10000] pointer-events-none' 
                         style={{display:'none',opacity:'0'}}/>
                     </div>
                 </div>
             )
         }
-        {/* <div className='m-auto w-full -'>
-            <img className="py-5" src='src/assets/images/BONUSSTAGE.png'/>
-        </div> */}
+        <div className='center-box'>
+            <div ref={glitchRef} className='m-auto w-full' style={{zIndex:9999}}>
+            {
+                [...Array(10)].map((_,i)=>(
+                    <img className="py-5  " src='src/assets/images/BONUSSTAGE.png'/>
+
+                ))
+            }
+            </div>
+        </div>
+        
         {/*       
             <video
                 className="absolute top-0 left-0 w-full min-h-screen object-cover z-1"
@@ -447,6 +466,18 @@ const SlotMachine = () => {
                 > 
                         <span className='font-mons text-[0.7rem]'>Bonus Left:</span> 
                         <span className='!text-[1rem]'>{freeSpinsRemaining}</span>
+                </div>
+                <div className={`${!inFreeSpinMode? 'bg-[#D97F9C]':'bg-white'} p-[2.125rem]  border-black opacity-75
+                    [transform-style:preserve-3d] [transform:rotateX(-5deg)_rotateY(-10deg)] mix-blend-difference flex items-center gap-[0.6rem] rotate-5 !clip-path-[polygon(0_12%,100%_0%,100%_100%,0_83%)]
+                     ${inFreeSpinMode? "animated-border" : ""}
+                    `} 
+                    onClick={runBonusAnimation}
+                    onMouseMove={handleMouseMove}
+                    onMouseLeave={handleMouseLeave}
+                    onMouseUp={handleMouseLeave}
+                    onMouseEnter={handleMouseLeave}
+                > 
+                        <span className='font-mons text-[0.7rem]'>Test Bonus Button</span> 
                 </div>
             </div>
        </div>

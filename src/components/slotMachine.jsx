@@ -252,6 +252,62 @@ const SlotMachine = () => {
         prevFreeSpinsRef.current = freeSpinsRemaining
     },[freeSpinsRemaining])
 
+    const startGlitch=()=>{
+        const el =glitchRef.current
+        if(!el) return
+
+        gsap.set(el,{display:'block',opacity:1,pointerEvents:'none'})
+
+        const imgs = el.querySelectorAll('img')
+
+        if(el._tl){
+            el._tl.kill()
+        }
+
+        const glitchTl= gsap.timeline({repeat:-1})
+
+        glitchTl.to(imgs,{
+            x:()=>gsap.utils.random(-12,12),
+            y:()=>gsap.utils.random(-8,8),
+
+            skewX:()=>gsap.utils.random(-8,-8),
+            duration:0.8,
+            ease:'none',
+            stagger:0.02,
+        }).to(imgs,{
+            x:()=>gsap.utils.random(-6,-6),
+            y:()=> gsap.utils.random(-4,4),
+            skewX:()=>gsap.utils.random(4,-4),
+            duration:5,
+            ease:'none',
+            stagger:0.02,
+        }).to(imgs,{
+            x:0,
+            y:0,
+            skewX:0,
+            duration:3,
+            ease:'power2.out',
+            stagger:0.02
+        })
+
+        el._tl = glitchTl()
+    }
+
+    const stopGlitch=()=>{
+        const el=glitchRef.current;
+        if(!el) return
+        if(el._tl){
+            el._tl.kill()
+            delete el._tl
+        }
+        gsap.set(el,{
+            display:'none',
+            opacity:0,
+            x:0,
+            y:0,
+            skewX:0
+        })
+    }
     const runBonusAnimation =()=>{
         if (isAnimatingBonusRef.current) return;
 
@@ -273,13 +329,16 @@ const SlotMachine = () => {
                 onComplete: () => {
                 gsap.set(splitBox.current, { display: "none", opacity: 0 });
                 gsap.set(bonusStageRef.current, { display: "none", opacity: 0 });
+                stopGlitch();
                 setIsAnimatingBonus(false);
                 },
             });
             tl.to(splitBox.current,{display:'block',opacity:1,duration:0.65,ease:'power3.out'})
             tl.to(splitLeftRef.current, { yPercent: -100, duration: 0.65, ease: "power3.out" }, 0);
             tl.to(splitRightRef.current, { yPercent:100, duration: 0.65, ease: "power3.out" }, 0);
-
+              tl.call(() => {
+                    startGlitch();
+                }, null, '>-0.05');
             bonusStageRef.current._tl = tl;
             });
         });
@@ -293,6 +352,9 @@ const SlotMachine = () => {
                 }
                 if(bonusStageRef.current && bonusStageRef.current._tl){
                     bonusStageRef.current._tl.kill()
+                }
+                if(glitchRef.current && glitchRef.current._tl){
+                    glitchRef.current._tl.kill();
                 }
             }catch(e){}
         }
@@ -333,7 +395,7 @@ const SlotMachine = () => {
             )
         }
         <div className='center-box'>
-            <div ref={glitchRef} className='m-auto w-full' style={{zIndex:9999}}>
+            <div ref={glitchRef} className='m-auto w-full' style={{ display: 'none', opacity: 0, zIndex: 9999 }}>
             {
                 [...Array(10)].map((_,i)=>(
                     <img className="py-5  " src='src/assets/images/BONUSSTAGE.png'/>

@@ -7,7 +7,7 @@ const SlotMachine = () => {
     const [history,setHistory] = useState([])
     const bonusTitleRef = useRef()
     const bonusStageRef = useRef()
-    const [bonusProgress,setBonusProgress] =useState(9)
+    const [bonusProgress,setBonusProgress] =useState(0)
     const [freeSpinsRemaining,setFreeSpinsRemaining] =useState(0)
     const slot = [
         { id: 1, value: '🍎',rewards:10,name:'Apple X3 (Tokens : 10)' },
@@ -44,6 +44,8 @@ const SlotMachine = () => {
     const coinSfx =useRef()
     const bonusBg =useRef()
     const videoRef =useRef()
+    const win777 =useRef()
+    const clock777 =useRef()
     const handleMouseLeave=()=>{
         const element = bgFrame.current
         gsap.to(element,{
@@ -144,7 +146,31 @@ const SlotMachine = () => {
         }
     },[history])
 
-    const spinFunc= ()=>{
+    const animatedReel = (index,finalY,duration)=>{
+        return newPromise((resolve)=>{
+            const el =stripRefs.current[index]
+            if(!el){
+                setTimeout(resolve,1000)
+                return
+            }
+
+            try{
+                gsap.killTweensOf(el)
+            }catch(e){}
+
+            gsap.to(el,{
+                y:finalY,
+                duration,
+                ease:'power2.inOut',
+                onComplete:()=>{
+                    setTimeout(()=>{
+
+                    },1000)
+                }
+            })
+        })
+    }   
+    const spinFunc= async()=>{
 
         if(spinning || isAnimatingBonus)return;
         
@@ -157,6 +183,8 @@ const SlotMachine = () => {
         }
 
         let finishedCount = 0;
+        // force 777 win
+        const jackpot = slot.find(s=>s.id===9)
 
         const spinResults = [];
         const nonJackpotSymbols = slot.filter(s => s.id !== 9);
@@ -178,12 +206,24 @@ const SlotMachine = () => {
             let symbol;
             if(i===0){
                 symbol = getRandomHighChance(highChanceId)
+                symbol=jackpot
+                
                 winningSymbol= symbol
             }else{
                 if(forceWin && winningSymbol.id !==9){
                     symbol = winningSymbol
+                    symbol=jackpot
+                    if(symbol === jackpot){
+                        clock777.current.play().catch(e => console.warn("clock 777  sounds blocked:", e));
+                    }
                 }else{
                     symbol = getRandomHighChance(highChanceId)
+                    ///
+                    symbol=jackpot
+                    if(symbol === jackpot){
+                        clock777.current.play().catch(e => console.warn("clock 777  sounds blocked:", e));
+                    }
+
                 }
             }
             console.log(symbol)
@@ -196,11 +236,21 @@ const SlotMachine = () => {
 
             spinResults[i]=symbol
             console.log('loop', loop, 'finalIndex', finalIndex, 'finalY', finalY, 'duration', duration);
-            gsap.to(element,{
+            // await animateReel(i, finalY, duration);
+            await gsap.to(element,{
                 y:finalY,
                 duration: duration,
                 ease: "power2.inOut",
                 onComplete : () => {
+                    const landed =spinResults[i]
+                    if(landed && landed.id === 9 && clock777.current){
+                        try{
+                            clock777.current.currentTime=0
+                            clock777.current.play()
+                        }catch(e){
+                            console.warn('clock 777 is blocekd')
+                        }
+                    }
                     finishedCount++;
                     if(finishedCount === reels.length){
                         if(spinResults[0].id === spinResults[1].id &&  spinResults[1].id === spinResults[2].id){
@@ -212,8 +262,13 @@ const SlotMachine = () => {
                             setTokens(prev=>prev+rewards)
                             if(matched.id !== 9){
                                 setStatusText(`Congratulation, You Win ${rewards} tokens`)
-
+                                
                             }else{
+                                // if(win777.current && clock777.current){
+                                //     win777.current.currentTime = 0;
+                                //     win777.current.play().catch(e => console.warn("clock 777  sounds blocked:", e));
+                                // }
+                               
                                 setStatusText(`WE GOT A 777 BONUES WINNER : ${rewards}`)
                             }
                             setHistory((prev)=>{
@@ -412,6 +467,12 @@ const SlotMachine = () => {
             </audio>
              <audio id="bg-audio" ref={bonusBg}>
                 <source src="src/assets/sound/sound.mp3" type="audio/mpeg" />
+            </audio>
+             <audio id="bg-audio" ref={clock777}>
+                <source src="src/assets/sound/777.mp3" type="audio/mpeg" />
+            </audio>
+             <audio id="bg-audio" ref={win777}>
+                <source src="src/assets/sound/777Win.mp3" type="audio/mpeg" />
             </audio>
         </section>
          <div ref={splitBox} className='center-box w-[50%] h-[8rem] overflow-hidden items-center justify-center bg-[#FFFF3C]' 

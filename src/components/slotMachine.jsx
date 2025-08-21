@@ -46,6 +46,7 @@ const SlotMachine = () => {
     const videoRef =useRef()
     const win777 =useRef()
     const clock777 =useRef()
+    const spinTweens =useRef([])
     const handleMouseLeave=()=>{
         const element = bgFrame.current
         gsap.to(element,{
@@ -147,7 +148,7 @@ const SlotMachine = () => {
     },[history])
 
     const animatedReel = (index,finalY,duration)=>{
-        return newPromise((resolve)=>{
+        return new Promise((resolve)=>{
             const el =stripRefs.current[index]
             if(!el){
                 setTimeout(resolve,1000)
@@ -170,11 +171,54 @@ const SlotMachine = () => {
             })
         })
     }   
+    const stopReel = (index,symbol)=>{
+        return new Promise((resolve)=>{
+            const el = stripRefs.current[index]
+            if(!el){
+                setTimeout(resolve,1000)
+                return
+            }
+
+            try{
+                if(spinTweens.current[index]){
+                    spinTweens.current[index].kill()
+                    delete spinTweens.current[index]
+                }
+            }catch(e){
+
+            }
+            console.log(symbol)
+            const randomIndex = slot.findIndex(s => s.id === symbol.id);
+
+            const loop = 3 + Math.floor(Math.random() * 4); // 3..6 loops
+            const finalIndex = baseOffset + loop * slot.length + randomIndex;
+            const finalY = -finalIndex * itemHeigh;
+            const duration = 0.9 + Math.random() * 1.0 + index * 0.25;
+
+            gsap.to(el,{
+                y:finalY,
+                duration,
+                ease:'power2.inOut',
+                onComplete:()=>{
+                    if(symbol && symbol.id === 9 &&clock777.current){
+                        try{
+                            clock777.current.currentTime=0
+                            clock777.current.play().catch(err=>console.warn("Clock 777 is blocked",err))
+                        }catch(e){
+                            console.log(e)
+                        }
+                    }
+                    resolve();
+                }
+            })
+            
+        })
+    }
     const spinFunc= async()=>{
 
         if(spinning || isAnimatingBonus)return;
-        
         if(freeSpinsRemaining === 0 && tokens <50) return;
+
         setSpinning(true)
         setStatusText('Welcome')
         
@@ -188,128 +232,113 @@ const SlotMachine = () => {
 
         const spinResults = [];
         const nonJackpotSymbols = slot.filter(s => s.id !== 9);
-        const highChanceId = nonJackpotSymbols[
-        Math.floor(Math.random() * nonJackpotSymbols.length)
-        ].id;
+        const highChanceId = nonJackpotSymbols[Math.floor(Math.random() * nonJackpotSymbols.length)].id;
 
-        const forceWin =Math.random()<0.4
+        const forceWin =Math.random()<0.8
         let winningSymbol=null
 
-
-        for(let i = 0;i<reels.length;i++){
-            const element = stripRefs.current[i];
-
-            if(!element){
-                finishedCount++;
-                continue    
-            }
+        for(let i = 0; i<reels.length;i++){
             let symbol;
             if(i===0){
                 symbol = getRandomHighChance(highChanceId)
-                symbol=jackpot
-                
                 winningSymbol= symbol
             }else{
                 if(forceWin && winningSymbol.id !==9){
                     symbol = winningSymbol
-                    symbol=jackpot
-                    if(symbol === jackpot){
-                        clock777.current.play().catch(e => console.warn("clock 777  sounds blocked:", e));
-                    }
                 }else{
                     symbol = getRandomHighChance(highChanceId)
-                    ///
-                    symbol=jackpot
-                    if(symbol === jackpot){
-                        clock777.current.play().catch(e => console.warn("clock 777  sounds blocked:", e));
-                    }
-
                 }
             }
-            console.log(symbol)
-            const randomIndex = slot.findIndex(s => s.id === symbol.id);
-
-            const loop = 3 + Math.floor(Math.random() * 4); // 3..6 loops
-            const finalIndex = baseOffset + loop * slot.length + randomIndex;
-            const finalY = -finalIndex * itemHeigh;
-            const duration = 0.9 + Math.random() * 1.0 + i * 0.25;
-
             spinResults[i]=symbol
-            console.log('loop', loop, 'finalIndex', finalIndex, 'finalY', finalY, 'duration', duration);
-            // await animateReel(i, finalY, duration);
-            await gsap.to(element,{
-                y:finalY,
-                duration: duration,
-                ease: "power2.inOut",
-                onComplete : () => {
-                    const landed =spinResults[i]
-                    if(landed && landed.id === 9 && clock777.current){
-                        try{
-                            clock777.current.currentTime=0
-                            clock777.current.play()
-                        }catch(e){
-                            console.warn('clock 777 is blocekd')
-                        }
-                    }
-                    finishedCount++;
-                    if(finishedCount === reels.length){
-                        if(spinResults[0].id === spinResults[1].id &&  spinResults[1].id === spinResults[2].id){
-                            const matched= slot.find(s=>s.id ===spinResults[0].id)
-                            const rewards=matched.rewards
+        }
 
-                            console.log('REWARDS'+ rewards)
+        //start the spins for all reels
+        for(let i =0;i<reels.length;i++){
+            const el = stripRefs.current[i]
+            if(!el) continue
 
-                            setTokens(prev=>prev+rewards)
-                            if(matched.id !== 9){
-                                setStatusText(`Congratulation, You Win ${rewards} tokens`)
-                                
-                            }else{
-                                // if(win777.current && clock777.current){
-                                //     win777.current.currentTime = 0;
-                                //     win777.current.play().catch(e => console.warn("clock 777  sounds blocked:", e));
-                                // }
-                               
-                                setStatusText(`WE GOT A 777 BONUES WINNER : ${rewards}`)
-                            }
-                            setHistory((prev)=>{
-                                const updated=[...prev,matched.name]
-                                return updated.length > 6? updated.slice(updated.length-6):updated
-                            })
+            try{
+                if(spinTweens.current[i]){
+                    spinTweens.current[i].kill();
+                }
+            }catch(e){
 
-                            if(freeSpinsRemaining ===0){
-                                setBonusProgress((prev)=>{
-                                    const next = prev+1
-                                    if(next >=10){
-                                        setBonusProgress(0)
-                                        setFreeSpinsRemaining(5)
-                                        setStatusText("Bonus")
-                                    }
-                                    return next>=10? 0:next
-                                })
-                            }
-                            setFreeSpinsRemaining((prev)=>{
-                                if(prev>0){
-                                    const next= prev-1;
-                                    if(next<=0){
-                                        setStatusText('Free Spins Finished')
-                                    }else{
-                                        setStatusText(`Free Spins left :${next}`)
-                                    }
-                                    return Math.max(0,next)
-                                }
-                                return prev
-                                
-                            })
-                        }
-                        setSpinning(false);
+            }
+            spinTweens.current[i] = gsap.to(el, {
+                y: `+=${slot.length * itemHeigh}`, // loops by one set
+                duration: 0.62,                    // lower -> faster spin
+                ease: "none",
+                repeat: -1,
+                modifiers: {
+                    // optional: keep y value numeric (not necessary but safe)
+                    y: gsap.utils.unitize(v => parseFloat(v))
+                }
+            });
+        }
+
+        for(let i =0;i<reels.length; i++){
+            await stopReel(i, spinResults[i]);
+            // WAIT 1 second before stopping the next reel
+            await new Promise(res => setTimeout(res, 1000));
+        }
+
+        if(spinResults[0] && spinResults[1] && spinResults[2] &&
+            spinResults[0].id === spinResults[1].id &&
+            spinResults[1].id === spinResults[2].id){
+
+            const matched = slot.find(s=>s.id === spinResults[0].id)
+            const rewards = matched.rewards
+
+            setTokens(prev =>prev + rewards)
+
+            if(matched.id!==9){
+                setStatusText(`Congratulations, You Win ${rewards} tokens`)
+            }else{
+                if(win777 && win777.current){
+                    try{
+                        win777.current.time=0
+                        win777.current.play().catch(e=>console.warn("win 777 blocked" +e))
+                    }catch(e){
+                        console.log(e)
                     }
                 }
+            }
+            setHistory(prev=>{
+                const updated = [...prev,matched.name]
+                return updated.length> 6? updated.slice(updated.length -6) : updated
             })
+
+            if(freeSpinsRemaining === 0){
+                setBonusProgress(prev=>{
+                    const next = (typeof prev === 'number' ? prev : 0) + 1;
+                    if(next >= 10){
+                        setFreeSpinsRemaining(5)
+                        setStatusText("Bonus")
+                    }
+                    return next
+                })
+            }
+
+           setFreeSpinsRemaining(prev =>{
+            const current = typeof prev ==='number'? prev :0;
+                if(current>0){
+                    const next =Math.max(0,current-1)
+                    setStatusText(next <= 0 ? 'Free Spins Finished' : `Free Spins left :${next}`)
+                    return next
+                }
+                return current
+           })
         }
+         setSpinning(false);
     }
 
     const prevFreeSpinsRef = useRef(freeSpinsRemaining)
-
+    
+   useEffect(() => {
+        return () => {
+            spinTweens.current.forEach(t => t && t.kill());
+        };
+    }, []);
     useEffect(()=>{
         if(freeSpinsRemaining > 0 && prevFreeSpinsRef.current === 0){
             runBonusAnimation()

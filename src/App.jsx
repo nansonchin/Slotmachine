@@ -24,8 +24,8 @@ const App = () => {
                 <SlotMachine/>
             )
             } */}
-                {/* <SlotMachine/> */}
-                <Loading onComplete={()=>setIsLoading(false)} isClicked={()=>setIsClicked(true)}/> 
+                <SlotMachine/>
+                {/* <Loading onComplete={()=>setIsLoading(false)} isClicked={()=>setIsClicked(true)}/>  */}
 
 
         </div>

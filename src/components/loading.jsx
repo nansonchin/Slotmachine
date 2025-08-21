@@ -1,6 +1,6 @@
 import React,{useRef,useEffect,useState} from 'react'
 import { gsap } from "gsap";
-// import SlotMachine from './slotMachine';
+import SlotMachine from './slotMachine';
 
 const loading = ({onComplete,isClicked}) => {
     const sRef = useRef()
@@ -11,12 +11,16 @@ const loading = ({onComplete,isClicked}) => {
     const buttonStart = useRef();
     const rotateFrame= useRef()
     const wholeFrame=useRef();
+    const loadingRef=useRef();
     const [canClick, setCanClick] = useState(false);
     
     useEffect(()=>{
         const tl=gsap.timeline({
             onComplete: () => {
                 setCanClick(true);
+                if (loadingRef.current) {
+                    loadingRef.current.style.display = "none";
+                }
             }
         })
         tlRef.current=tl
@@ -87,6 +91,7 @@ const loading = ({onComplete,isClicked}) => {
            onComplete: () => {
                 if (isClicked) isClicked();
                 if (onComplete) onComplete(); // ✅ tell parent we are done
+
             }
         })
         tlRef.current=tl2
@@ -120,7 +125,7 @@ const loading = ({onComplete,isClicked}) => {
         
   return (
     <div className='relative'>
-        <div className='absolute z-60'>
+        <div ref={loadingRef} className='absolute z-60'>
             <div ref={wholeFrame} className='loading-background flex items-center justify-center min-h-screen overflow-hidden z-50'>
                 <div ref={rotateFrame} className=' absolute'>
                     <div className='flex flex-col'>
@@ -145,9 +150,9 @@ const loading = ({onComplete,isClicked}) => {
                 </div>
             </div>
         </div>
-        {/* <div className='relative z-30'>
+        <div className='relative' style={{}}>
             <SlotMachine/>
-        </div> */}
+        </div>
     </div>
     
   )

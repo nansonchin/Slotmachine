@@ -40,6 +40,10 @@ const SlotMachine = () => {
     const splitRightRef = useRef()
     const glitchRef = useRef()
     const isAnimatingBonusRef = useRef(false);
+    const bonusSfx = useRef()
+    const coinSfx =useRef()
+    const bonusBg =useRef()
+    const videoRef =useRef()
     const handleMouseLeave=()=>{
         const element = bgFrame.current
         gsap.to(element,{
@@ -86,9 +90,15 @@ const SlotMachine = () => {
 
     useEffect(()=>{
         if(isAnimatingBonus) return;
+
         const handleKey=(event=>{
             if(event.key.toLowerCase() === 'r'){
-                setTokens(prev=>prev+10)
+                if(coinSfx.current){
+                    setTokens(prev=>prev+10)
+                     coinSfx.current.currentTime = 0; // rewind
+                    coinSfx.current.play().catch(e => console.warn("coin sounds blocked:", e));
+                }
+                
             }
         })
         window.addEventListener('keydown',handleKey)
@@ -252,98 +262,128 @@ const SlotMachine = () => {
         prevFreeSpinsRef.current = freeSpinsRemaining
     },[freeSpinsRemaining])
 
-    const startGlitch=()=>{
-        const el =glitchRef.current
-        if(!el) return
-
-        gsap.set(el,{display:'block',opacity:1,pointerEvents:'none'})
-
-        const imgs = el.querySelectorAll('img')
-
-        if(el._tl){
-            el._tl.kill()
+    useEffect(() => {
+        if (freeSpinsRemaining === 0) {
+            // Stop bonus video and audio
+            if (videoRef.current) {
+                videoRef.current.pause();
+                videoRef.current.currentTime = 0; // reset
+            }
+            if (bonusBg.current) {
+                bonusBg.current.pause();
+                bonusBg.current.currentTime = 0;
+            }
         }
+        }, [freeSpinsRemaining]);
 
-        const glitchTl= gsap.timeline({repeat:-1})
+    // const startGlitch=()=>{
+    //     const el =glitchRef.current
+    //     if(!el) return
 
-        glitchTl.to(imgs,{
-            x:()=>gsap.utils.random(-12,12),
-            y:()=>gsap.utils.random(-8,8),
+    //     gsap.set(el,{display:'block',opacity:1,pointerEvents:'none'})
 
-            skewX:()=>gsap.utils.random(-8,-8),
-            duration:0.8,
-            ease:'none',
-            stagger:0.02,
-        }).to(imgs,{
-            x:()=>gsap.utils.random(-6,-6),
-            y:()=> gsap.utils.random(-4,4),
-            skewX:()=>gsap.utils.random(4,-4),
-            duration:5,
-            ease:'none',
-            stagger:0.02,
-        }).to(imgs,{
-            x:0,
-            y:0,
-            skewX:0,
-            duration:3,
-            ease:'power2.out',
-            stagger:0.02
-        })
+    //     const imgs = el.querySelectorAll('img')
 
-        el._tl = glitchTl()
-    }
+    //     if(el._tl){
+    //         el._tl.kill()
+    //     }
 
-    const stopGlitch=()=>{
-        const el=glitchRef.current;
-        if(!el) return
-        if(el._tl){
-            el._tl.kill()
-            delete el._tl
-        }
-        gsap.set(el,{
-            display:'none',
-            opacity:0,
-            x:0,
-            y:0,
-            skewX:0
-        })
-    }
+    //     const glitchTl= gsap.timeline({repeat:-1})
+
+    //     glitchTl.to(imgs,{
+    //         x:()=>gsap.utils.random(-12,12),
+    //         y:()=>gsap.utils.random(-8,8),
+
+    //         skewX:()=>gsap.utils.random(-8,-8),
+    //         duration:0.8,
+    //         ease:'none',
+    //         stagger:0.02,
+    //     }).to(imgs,{
+    //         x:()=>gsap.utils.random(-6,-6),
+    //         y:()=> gsap.utils.random(-4,4),
+    //         skewX:()=>gsap.utils.random(4,-4),
+    //         duration:5,
+    //         ease:'none',
+    //         stagger:0.02,
+    //     }).to(imgs,{
+    //         x:0,
+    //         y:0,
+    //         skewX:0,
+    //         duration:3,
+    //         ease:'power2.out',
+    //         stagger:0.02
+    //     })
+
+    //     el._tl = glitchTl()
+    // }
+
+    // const stopGlitch=()=>{
+    //     const el=glitchRef.current;
+    //     if(!el) return
+    //     if(el._tl){
+    //         el._tl.kill()
+    //         delete el._tl
+    //     }
+    //     gsap.set(el,{
+    //         display:'none',
+    //         opacity:0,
+    //         x:0,
+    //         y:0,
+    //         skewX:0
+    //     })
+    // }
     const runBonusAnimation =()=>{
         if (isAnimatingBonusRef.current) return;
 
         setIsAnimatingBonus(true);
         isAnimatingBonusRef.current = true;
-
+        
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
             if (!glitchRef.current || !bonusStageRef.current || !splitBox.current || !splitLeftRef.current || !splitRightRef.current) {
                 console.warn("bonus refs not ready");
                 return;
             }
-
+            
             setIsAnimatingBonus(true); // already set but safe to call
-
+            if (bonusSfx.current) {
+                bonusSfx.current.currentTime = 0; // rewind
+                bonusSfx.current.play().catch(e => console.warn("sound blocked:", e));
+            }
             gsap.set(bonusStageRef.current, { opacity: 0, display: "none" });
             gsap.set(splitBox.current, { opacity: 0, });
             const tl = gsap.timeline({
                 onComplete: () => {
                 gsap.set(splitBox.current, { display: "none", opacity: 0 });
                 gsap.set(bonusStageRef.current, { display: "none", opacity: 0 });
-                stopGlitch();
+                // stopGlitch();
                 setIsAnimatingBonus(false);
                 },
             });
             tl.to(splitBox.current,{display:'block',opacity:1,duration:0.65,ease:'power3.out'})
             tl.to(splitLeftRef.current, { yPercent: -100, duration: 0.65, ease: "power3.out" }, 0);
             tl.to(splitRightRef.current, { yPercent:100, duration: 0.65, ease: "power3.out" }, 0);
-              tl.call(() => {
-                    startGlitch();
-                }, null, '>-0.05');
+            tl.to([splitRightRef.current,splitLeftRef.current,splitBox.current], { opacity: 0, duration: 0.6, delay: 0.6 });
+            const blinkTl = gsap.timeline({ repeat: 2 });
+            blinkTl
+                .to(glitchRef.current, { opacity: 1, duration: 0.3,display:'block' })
+                .to(glitchRef.current, { opacity: 0, duration: 0.3, delay: 0.08 ,display:'none'});
+            tl.add(blinkTl);
+
+            tl.to(glitchRef.current, { opacity: 0, duration: 0.2, delay: 0.1 });
+            if(bonusBg.current){
+                bonusBg.current.currentTime = 0;
+                videoRef.current.currentTime = 0;
+                videoRef.current.play().catch(e => console.warn("video reset blocked:", e));
+                bonusBg.current.play().catch(e => console.warn("sound blocked:", e));
+            }
+            //   tl.call(() => {
+            //         startGlitch();
+            //     }, null, '>-0.05');
             bonusStageRef.current._tl = tl;
             });
         });
     }
-
     useEffect(()=>{
         return()=>{
             try{
@@ -363,6 +403,17 @@ const SlotMachine = () => {
     const inFreeSpinMode = freeSpinsRemaining > 0;
   return (
     <section className='SlotMachine relative min-h-screen'>
+        <section id="sound-efffect">
+             <audio id="bg-audio" ref={bonusSfx}>
+                <source  src="src/assets/sound/bonusTrigger.mp3"  type="audio/mpeg" preload="auto"/>
+            </audio>
+             <audio id="bg-audio" ref={coinSfx}>
+                <source src="src/assets/sound/coinInsert.mp3" type="audio/mpeg" preload="auto"/>
+            </audio>
+             <audio id="bg-audio" ref={bonusBg}>
+                <source src="src/assets/sound/sound.mp3" type="audio/mpeg" />
+            </audio>
+        </section>
          <div ref={splitBox} className='center-box w-[50%] h-[8rem] overflow-hidden items-center justify-center bg-[#FFFF3C]' 
           style={{display: "none", zIndex:999}}
           >
@@ -427,6 +478,7 @@ const SlotMachine = () => {
             [clip-path:ellipse(98%_95%_at_bottom)]
             '>
                 <video
+                ref={videoRef}
                 className="absolute top-0 left-0 w-full min-h-screen object-center z-1"
                 src="src/assets/video/pixel.mp4"
                 autoPlay

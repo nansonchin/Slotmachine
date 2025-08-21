@@ -17,16 +17,16 @@ const App = () => {
         }, [isLoading,isClicked]);
     return (
         <div>
-            <audio id="bg-audio" loop>
-                <source src="src/assets/sound/sound.mp3" type="audio/mpeg" />
-            </audio>
+           
             {/* {isLoading && !isClicked?(
                  <Loading onComplete={()=>setIsLoading(false)} isClicked={()=>setIsClicked(true)}/> 
             ):(
                 <SlotMachine/>
             )
             } */}
-                <SlotMachine/>
+                {/* <SlotMachine/> */}
+                <Loading onComplete={()=>setIsLoading(false)} isClicked={()=>setIsClicked(true)}/> 
+
 
         </div>
     )

@@ -51,6 +51,8 @@ const SlotMachine = () => {
     const pairRef1 =useRef()
     const pairRef2 =useRef()
     const pairRef3 =useRef()
+    const historyTextRef =useRef()
+    const clickRef =useRef()
     const spinTweens =useRef([])
     const handleMouseLeave=()=>{
         const element = bgFrame.current
@@ -141,6 +143,8 @@ const SlotMachine = () => {
 
     useEffect(()=>{
         if(history.length > 0 && historyRef.current){
+            historyTextRef.current.currentTime = 0;
+            historyTextRef.current.play().catch(e => console.warn("history text sound blocked:", e));
             const lastItem= historyRef.current.lastElementChild
             if(lastItem){
                 gsap.fromTo(
@@ -230,7 +234,8 @@ const SlotMachine = () => {
         })
     }
     const spinFunc= async()=>{
-
+        clickRef.current.currentTime=0
+        clickRef.current.play().catch(e=>console.warn("Clicked Sound Blocked"+e))
         if(spinning || isAnimatingBonus)return;
         if(freeSpinsRemaining === 0 && tokens <50) return;
 
@@ -257,15 +262,15 @@ const SlotMachine = () => {
             if(i===0){
                 symbol = getRandomHighChance(highChanceId)
                 winningSymbol= symbol
-                symbol=jackpot
+                // symbol=jackpot
             }else{
                 if(forceWin && winningSymbol.id !==9){
                     symbol = winningSymbol
-                    symbol=jackpot
+                    // symbol=jackpot
 
                 }else{
                     symbol = getRandomHighChance(highChanceId)
-                    symbol=jackpot
+                    // symbol=jackpot
                 }
             }
             spinResults[i]=symbol
@@ -527,8 +532,14 @@ const SlotMachine = () => {
   return (
     <section className='SlotMachine relative min-h-screen'>
         <section id="sound-efffect">
-             <audio id="bg-audio" ref={bonusSfx}>
+            <audio id="bg-audio" ref={clickRef}>
+                <source  src="src/assets/sound/click.mp3"  type="audio/mpeg" preload="auto"/>
+            </audio>
+            <audio id="bg-audio" ref={bonusSfx}>
                 <source  src="src/assets/sound/bonusTrigger.mp3"  type="audio/mpeg" preload="auto"/>
+            </audio>
+            <audio id="bg-audio" ref={historyTextRef}>
+                <source  src="src/assets/sound/historyText.mp3"  type="audio/mpeg" preload="auto"/>
             </audio>
              <audio id="bg-audio" ref={coinSfx}>
                 <source src="src/assets/sound/coinInsert.mp3" type="audio/mpeg" preload="auto"/>

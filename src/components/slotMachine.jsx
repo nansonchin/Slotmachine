@@ -46,6 +46,11 @@ const SlotMachine = () => {
     const videoRef =useRef()
     const win777 =useRef()
     const clock777 =useRef()
+    const normalWinRef =useRef()
+    const loseRef =useRef()
+    const pairRef1 =useRef()
+    const pairRef2 =useRef()
+    const pairRef3 =useRef()
     const spinTweens =useRef([])
     const handleMouseLeave=()=>{
         const element = bgFrame.current
@@ -98,7 +103,7 @@ const SlotMachine = () => {
             if(event.key.toLowerCase() === 'r'){
                 if(coinSfx.current){
                     setTokens(prev=>prev+10)
-                     coinSfx.current.currentTime = 0; // rewind
+                    coinSfx.current.currentTime = 0; // rewind
                     coinSfx.current.play().catch(e => console.warn("coin sounds blocked:", e));
                 }
                 
@@ -200,10 +205,20 @@ const SlotMachine = () => {
                 duration,
                 ease:'power2.inOut',
                 onComplete:()=>{
-                    if(symbol && symbol.id === 9 &&clock777.current){
+                    const pairRefs=[pairRef1,pairRef2,pairRef3]
+                    const pair=pairRefs[index]
+                    console.log(pairRefs[index])
+                    if(symbol && symbol.id === 9 && clock777.current){
                         try{
                             clock777.current.currentTime=0
                             clock777.current.play().catch(err=>console.warn("Clock 777 is blocked",err))
+                        }catch(e){
+                            console.log(e)
+                        }
+                    }else if(pair && symbol  && symbol.id != 9 && pair.current){
+                        try{
+                            pair.current.currentTime=0
+                            pair.current.play().catch(err=>console.warn(`pairs ${index+1} blocked`,err))
                         }catch(e){
                             console.log(e)
                         }
@@ -234,7 +249,7 @@ const SlotMachine = () => {
         const nonJackpotSymbols = slot.filter(s => s.id !== 9);
         const highChanceId = nonJackpotSymbols[Math.floor(Math.random() * nonJackpotSymbols.length)].id;
 
-        const forceWin =Math.random()<0.8
+        const forceWin =Math.random()<0.4
         let winningSymbol=null
 
         for(let i = 0; i<reels.length;i++){
@@ -242,11 +257,15 @@ const SlotMachine = () => {
             if(i===0){
                 symbol = getRandomHighChance(highChanceId)
                 winningSymbol= symbol
+                symbol=jackpot
             }else{
                 if(forceWin && winningSymbol.id !==9){
                     symbol = winningSymbol
+                    symbol=jackpot
+
                 }else{
                     symbol = getRandomHighChance(highChanceId)
+                    symbol=jackpot
                 }
             }
             spinResults[i]=symbol
@@ -292,12 +311,23 @@ const SlotMachine = () => {
             setTokens(prev =>prev + rewards)
 
             if(matched.id!==9){
+                try{
+                    if(normalWinRef && normalWinRef.current){
+                        normalWinRef.current.currentTime=0
+                        normalWinRef.current.play().catch(e=>console.warn("NormalWin Blocked"+e))
+                    }
+                }catch(e){
+                    console.log(e)
+                }
                 setStatusText(`Congratulations, You Win ${rewards} tokens`)
             }else{
+                console.log('Win 777')
                 if(win777 && win777.current){
                     try{
-                        win777.current.time=0
-                        win777.current.play().catch(e=>console.warn("win 777 blocked" +e))
+                        console.log('Win 777 ref found')
+
+                        win777.current.currentTime=0
+                        win777.current.play().catch(e=>console.warn("win 777 Blocked"+e))
                     }catch(e){
                         console.log(e)
                     }
@@ -328,8 +358,17 @@ const SlotMachine = () => {
                 }
                 return current
            })
+        }else{
+            try{
+                if(loseRef && loseRef.current){
+                    loseRef.current.currentTime=0
+                    loseRef.current.play().catch(e=>console.warn("Lose Blocked"+e))
+                }
+            }catch(e){
+                console.log(e)
+            }
         }
-         setSpinning(false);
+        setSpinning(false);
     }
 
     const prevFreeSpinsRef = useRef(freeSpinsRemaining)
@@ -441,7 +480,7 @@ const SlotMachine = () => {
                 gsap.set(splitBox.current, { display: "none", opacity: 0 });
                 gsap.set(bonusStageRef.current, { display: "none", opacity: 0 });
                 // stopGlitch();
-                setIsAnimatingBonus(false);
+                    setIsAnimatingBonus(false);
                 },
             });
             tl.to(splitBox.current,{display:'block',opacity:1,duration:0.65,ease:'power3.out'})
@@ -500,9 +539,25 @@ const SlotMachine = () => {
              <audio id="bg-audio" ref={clock777}>
                 <source src="src/assets/sound/777.mp3" type="audio/mpeg" />
             </audio>
-             <audio id="bg-audio" ref={win777}>
+            <audio id="bg-audio" ref={win777}>
                 <source src="src/assets/sound/777Win.mp3" type="audio/mpeg" />
             </audio>
+             <audio id="bg-audio" ref={pairRef1}>
+                <source src="src/assets/sound/pair1.mp3" type="audio/mpeg" />
+            </audio>
+             <audio id="bg-audio" ref={pairRef2}>
+                <source src="src/assets/sound/pair2.mp3" type="audio/mpeg" />
+            </audio>
+             <audio id="bg-audio" ref={pairRef3}>
+                <source src="src/assets/sound/pair3.mp3" type="audio/mpeg" />
+            </audio>
+             <audio id="bg-audio" ref={normalWinRef}>
+                <source src="src/assets/sound/normalwin.mp3" type="audio/mpeg" />
+            </audio>
+             <audio id="bg-audio" ref={loseRef}>
+                <source src="src/assets/sound/lose3.mp3" type="audio/mpeg" />
+            </audio>
+            
         </section>
          <div ref={splitBox} className='center-box w-[50%] h-[8rem] overflow-hidden items-center justify-center bg-[#FFFF3C]' 
           style={{display: "none", zIndex:999}}
